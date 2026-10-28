@@ -2,6 +2,18 @@
 
 LakiBeam C++ SDK 用于接收 LakiBeam 激光雷达采集的数据，并提供雷达参数配置接口。
 
+## 离线抓包解析（新增）
+
+Windows 客户可使用 `LakiBeam1_Capture_Windows_x64.zip` 中的免安装程序，双击选择 `.pcap` / `.pcapng`，导出分卷 CSV。支持 LakiBeam1 每圈 1440 / 3600 个采样位置，保留两个回波，并处理补齐块、首尾完整扫描和缺包。
+
+- [中文使用说明](docs/Quick_Start_CN.txt)
+- [English quick start](docs/Quick_Start_EN.txt)
+- [C++ 离线接口、构建及测试](docs/Offline_API.md)
+
+源码构建：`cmake -S . -B build`，然后 `cmake --build build --config Release`。离线模块无需 Boost / libpcap / Npcap。Windows 构建包由本仓库 Actions 提供；请先解压再运行。
+
+以下环境和接口说明适用于原有实时 UDP / HTTP SDK。
+
 ## 项目简介
 
 LakiBeam 数据采集系统由以下部分组成：
@@ -90,10 +102,8 @@ LakiBeamUDP(
 
 | 函数 | 说明 |
 | --- | --- |
-| `dots_valid()` | 获取有效雷达数据数量 |
-| `get_pack()` | 获取雷达数据包 |
-| `restart()` | 重启 UDP SDK 功能 |
-| `wait()` | 等待下一包数据 |
+| `sync_get_repackedpack(repark_t&)` | 等待并取得重组扫描数据 |
+| `get_repackedpack(repark_t&)` | 非阻塞取得扫描数据；返回是否有新数据 |
 
 ## HTTP 接口
 
@@ -161,3 +171,4 @@ LakiBeamUDP(
 ## License
 
 Copyright © LakiBeam
+

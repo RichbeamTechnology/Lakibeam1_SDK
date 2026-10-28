@@ -1,0 +1,71 @@
+LakiBeam1 抓包解析工具 1.0.0
+适用系统：Windows 10 / 11，64 位
+
+使用方法
+1. 先解压整个 ZIP 文件。
+2. 双击 LakiBeamCapture.exe。
+3. 选择 Wireshark 保存的 .pcap 或 .pcapng 文件。
+4. 等待完成提示。结果保存在抓包旁边的 capture_decoded 文件夹。
+   如果文件夹已经存在，会自动使用 capture_decoded_2 等新名称。
+5. 用 Excel 或分析软件打开 points_0001.csv 等文件。
+   默认每个 CSV 最多 200 圈，最多 720,000 行数据，避免超过 Excel 行数限制。
+   summary.json 中记录解析数量和异常统计。
+
+也可将一个抓包文件拖到 EXE 上运行。
+运行已提供的 EXE 无需安装 Python、Wireshark、Npcap、Boost 或 Visual Studio；
+无需联网，也无需连接雷达。
+
+示例文件
+demo_synthetic.pcap 是人工生成的测试数据，不是真实测量。
+解析后应得到 1 圈、1,440 个采样位置和 1 个 CSV。
+
+CSV 字段
+scan_id：完整扫描编号，从 1 开始。
+point_index：圈内采样位置编号，从 0 开始。
+angle_deg：角度，单位为度，范围 0（含）至 360（不含）。
+distance0_raw / rssi0：第一回波的原始距离值 / 强度。
+distance1_raw / rssi1：第二回波的原始距离值 / 强度。
+lidar_packet_timestamp_raw：UDP 包中的原始 32 位雷达时间戳。
+capture_timestamp_s：抓包时间，Unix 时间戳秒数；PCAPNG Simple Packet Block
+没有抓包时间，此字段留空。
+
+距离值未换算为米或毫米。换算物理单位时，请以设备协议规定的比例为准。
+距离为 0 的记录会保留，不应当作有效测距点。
+雷达时间戳保留包级原始值，不虚构各采样点的精确时间。
+
+支持范围
+LakiBeam1：1,206 字节 UDP 有效载荷，factory 为 0x4037（线缆字节 37 40）。
+支持每圈 1,440 个位置（0.25°）或 3,600 个位置（0.1°）。
+首圈和末圈只要完整即可导出；尾部全 FF 补齐块不参与角度或距离计算。
+不完整扫描会跳过并统计，不会补造缺失点；相邻重复雷达包会忽略。
+
+支持 PCAP 和 PCAPNG，包括不同字节序、PCAP 微秒/纳秒时间戳、多 section、
+多 interface、Enhanced / Simple / 旧式 Packet Block。
+网络格式支持 IPv4 UDP：以太网、VLAN、raw IP、Linux cooked v1/v2、loopback。
+暂不支持 IPv6 和 IP 分片重组。不保证兼容 LakiBeam1H / 1H Pro 等其他型号。
+
+命令行示例（PowerShell）
+.\LakiBeamCapture.exe "C:\Data\capture.pcapng" --quiet
+.\LakiBeamCapture.exe "C:\Data\capture.pcapng" "C:\Data\new_result" --quiet
+.\LakiBeamCapture.exe "capture.pcap" --source-ip 192.168.8.2 --port 2368 --quiet
+.\LakiBeamCapture.exe "capture.pcapng" --scans-per-file 100 --quiet
+.\LakiBeamCapture.exe --help
+
+默认目标 UDP 端口为 2368，源端口自动识别。
+抓包有多个雷达数据流时，请用 --source-ip 和 --port 筛选。
+显式指定的输出文件夹必须尚不存在，其上级文件夹必须已经存在。
+返回码：0 表示已导出完整圈；1 表示错误；2 表示没有找到完整圈。
+出现错误时，可能已经写出部分 CSV；必须检查 summary.json 的 status 和 error，
+不能把 status=failed 的结果视为成功导出。
+
+排查建议
+没有扫描：确认型号、抓包时长和目标 UDP 端口。
+缺少扫描：查看 summary.json 中的不完整扫描、跳变及异常包计数，检查抓包丢包。
+距离为零：检查测量状态和场景是否在有效测距范围。
+不能写入：选择可写目录，并确保磁盘有足够空间。
+EXE 尚未进行数字签名；若客户 IT 策略限制未签名程序，请由 IT 审核处理。
+
+研发集成
+source/docs/Offline_API.md 提供 C++ 接口与构建说明。
+离线解析模块和命令行工具使用 C++17 标准库，独立于原有实时 UDP/HTTP 接口。
+源代码仓库：https://github.com/RichbeamTechnology/Lakibeam1_SDK
