@@ -1,0 +1,79 @@
+LakiBeam1 Capture Exporter 1.0.0
+Windows 10/11, 64-bit
+
+QUICK START
+1. Extract the entire ZIP to a local folder.
+2. Double-click LakiBeamCapture.exe.
+3. Select a Wireshark .pcap or .pcapng capture.
+4. Wait for the completion dialog. The result folder is next to the capture:
+   capture_decoded (or capture_decoded_2 if that name already exists).
+5. Open points_0001.csv, points_0002.csv, etc. in Excel or your analysis tool.
+   Each file contains at most 200 complete scans (720,000 data rows maximum).
+   summary.json contains counts and diagnostic information.
+
+No Python, Wireshark, Npcap, Boost, or Visual Studio installation is needed to
+run the supplied Windows executable. It works locally and needs no network
+connection or connected lidar. You can also drag one capture onto the EXE.
+
+DEMO
+demo_synthetic.pcap contains one artificial 1440-point circle for a quick
+installation check. It is generated test data, not a measurement.
+Expected result: 1 scan, 1440 points, 1 CSV file.
+
+CSV FIELDS
+scan_id                     Complete scan number, starting at 1.
+point_index                 Position within the circle, starting at 0.
+angle_deg                   Angle in degrees, from 0 to less than 360.
+distance0_raw / rssi0        First return: original distance / intensity.
+distance1_raw / rssi1        Second return: original distance / intensity.
+lidar_packet_timestamp_raw  Original 32-bit timestamp from the UDP packet.
+capture_timestamp_s         Capture timestamp in seconds since Unix epoch;
+                            blank for PCAPNG Simple Packet Blocks.
+
+Distance values are NOT converted to metres or millimetres. Use the distance
+scale specified by your device protocol before calculating physical units.
+A zero distance is retained and must not be treated as a valid measured point.
+The lidar timestamp is a PACKET timestamp; it is not interpolated per point.
+
+SUPPORTED DATA
+LakiBeam1: UDP payload 1206 bytes, factory field 0x4037 (wire bytes 37 40),
+1440 positions/circle (0.25 degrees) or 3600 positions/circle (0.1 degrees).
+Complete circles are exported, including a complete first or last circle.
+All-FF trailing padding is excluded from measurements and angle calculations.
+Partial circles, gaps, malformed packets and fragments are reported; missing
+points are never invented. Adjacent duplicate lidar packets are ignored.
+
+Capture formats: classic PCAP (microsecond/nanosecond, either byte order),
+PCAPNG (multiple sections/interfaces; Enhanced, Simple and obsolete Packet
+Blocks). IPv4 UDP over Ethernet/VLAN, raw IP, Linux cooked v1/v2, or loopback.
+IPv6 and IP-fragment reassembly are not supported. This package does not claim
+compatibility with LakiBeam1H, LakiBeam1H Pro or other UDP formats.
+
+COMMAND LINE (PowerShell)
+.\LakiBeamCapture.exe "C:\Data\capture.pcapng" --quiet
+.\LakiBeamCapture.exe "C:\Data\capture.pcapng" "C:\Data\new_result" --quiet
+.\LakiBeamCapture.exe "capture.pcap" --source-ip 192.168.8.2 --port 2368 --quiet
+.\LakiBeamCapture.exe "capture.pcapng" --scans-per-file 100 --quiet
+.\LakiBeamCapture.exe --help
+
+The destination port defaults to 2368. The source port is detected from data.
+If more than one lidar stream is present, select one with --source-ip/--port.
+An explicitly named output folder must not already exist; files are never
+overwritten. Its parent folder must already exist.
+Exit codes: 0 = exported complete scans; 1 = error; 2 = no complete scans.
+On error, any partial CSV output is not a successful export: check the
+"status" and "error" fields in summary.json before using results.
+
+TROUBLESHOOTING
+- No scans: confirm the model, capture duration and destination UDP port.
+- Missing scans: inspect incomplete_scans, discontinuities and packet counters
+  in summary.json; capture with full packet lengths and avoid dropping packets.
+- Empty distances: check whether measurement is enabled and objects are in range.
+- Cannot create output: choose a writable folder with enough free space.
+- The executable is not digitally signed. Ask your IT team to review it if
+  your organization restricts unsigned programs; do not disable protection.
+
+DEVELOPER INTEGRATION
+See source/docs/Offline_API.md. The offline SDK and CLI use C++17 and the
+standard library. The original live UDP/HTTP SDK interfaces are separate.
+Source repository: https://github.com/RichbeamTechnology/Lakibeam1_SDK

@@ -1,0 +1,35 @@
+name: Capture parser build and test
+on:
+  push:
+    branches: ['codex/lakibeam1-capture-*']
+  pull_request:
+    paths: ['offline/**', 'tests/**', 'docs/**', 'CMakeLists.txt', '.github/workflows/capture.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Configure
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+      - name: Build
+        run: cmake --build build --config Release
+      - name: Test
+        run: ctest --test-dir build -C Release --output-on-failure
+      - name: Package Windows x64
+        if: runner.os == 'Windows'
+        run: python tests/package_windows.py build/Release/LakiBeamCapture.exe dist
+      - name: Upload Windows customer package
+        if: runner.os == 'Windows'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: LakiBeam1-Capture-Windows-x64
+          path: dist/LakiBeam1_Capture_Windows_x64.zip
+          if-no-files-found: error
+          retention-days: 90

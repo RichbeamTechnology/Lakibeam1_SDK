@@ -2,6 +2,18 @@
 
 The LakiBeam C++ SDK is used to receive data collected by LakiBeam lidar devices and provides interfaces for configuring lidar parameters.
 
+## Offline capture export (new)
+
+Windows customers can extract `LakiBeam1_Capture_Windows_x64.zip`, double-click the executable, select a `.pcap` / `.pcapng` file, and export split CSV files. The offline decoder supports LakiBeam1 1440 / 3600-position circles, preserves both returns, and handles padding, complete first/last circles and gaps.
+
+- [English quick start](docs/Quick_Start_EN.txt)
+- [中文使用说明](docs/Quick_Start_CN.txt)
+- [C++ offline API, build and tests](docs/Offline_API.md)
+
+Build from source with `cmake -S . -B build`, then `cmake --build build --config Release`. The offline module needs no Boost, libpcap or Npcap. Windows packages are available as this repository's Actions artifacts. Extract the package before running it.
+
+The requirements and APIs below describe the original live UDP / HTTP SDK.
+
 ## Project Overview
 
 The LakiBeam data acquisition system consists of the following components:
@@ -90,10 +102,8 @@ LakiBeamUDP(
 
 | Function | Description |
 | --- | --- |
-| `dots_valid()` | Gets the number of valid lidar data points |
-| `get_pack()` | Gets a lidar data packet |
-| `restart()` | Restarts the UDP SDK function |
-| `wait()` | Waits for the next data packet |
+| `sync_get_repackedpack(repark_t&)` | Waits for and returns a reconstructed scan |
+| `get_repackedpack(repark_t&)` | Non-blocking scan retrieval; returns whether new data is available |
 
 ## HTTP API
 
@@ -160,3 +170,4 @@ The lidar uses active upload mode by default.
 ## License
 
 Copyright © LakiBeam
+
